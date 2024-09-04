@@ -111,3 +111,15 @@ public class ReverseComparer : IComparer<decimal>
         return y.CompareTo(x);
     }
 }
+
+
+tips：
+The `leaderboard` is a `SortedDictionary` that uses a custom comparer to first sort by score in descending order, and then by customer ID in ascending order.
+
+The `customerData` is a `Dictionary` used to store the score and ranking of each customer.
+
+The `UpdateScore` method is used to update a customer's score and the leaderboard accordingly.
+
+The `GetCustomersByRank` method is used to retrieve customers within a specified ranking range.
+
+The `GetCustomersByCustomerId` method is used to obtain information about a specific customer and their neighbors.
