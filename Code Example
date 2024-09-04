@@ -1,0 +1,113 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class ScoreService
+{
+    private SortedDictionary<decimal, List<int>> leaderboard = new SortedDictionary<decimal, List<int>>(new ReverseComparer());
+    private Dictionary<int, decimal> customerScores = new Dictionary<int, decimal>();
+
+    public decimal UpdateScore(int customerId, decimal scoreChange)
+    {
+        if (!customerScores.ContainsKey(customerId))
+        {
+            customerScores[customerId] = 0;
+        }
+        decimal currentScore = customerScores[customerId];
+        decimal newScore = currentScore + scoreChange;
+        if (newScore == currentScore)
+        {
+            return currentScore;
+        }
+        customerScores[customerId] = newScore;
+        if (leaderboard.ContainsKey(currentScore))
+        {
+            leaderboard[currentScore].Remove(customerId);
+            if (leaderboard[currentScore].Count == 0)
+            {
+                leaderboard.Remove(currentScore);
+            }
+        }
+        if(newScore==0)
+        {
+            return newScore;
+        }
+        if (!leaderboard.ContainsKey(newScore))
+        {
+            leaderboard[newScore] = new List<int>();
+        }
+        leaderboard[newScore].Add(customerId);
+        return newScore;
+    }
+
+    public IEnumerable<(int CustomerId, decimal Score, int Rank)> GetCustomersByRank(int start, int end)
+    {
+        var rank = 1;
+        foreach (var kvp in leaderboard)
+        {
+            foreach (var customerId in kvp.Value)
+            {
+                if (rank >= start && rank <= end)
+                {
+                    yield return (customerId, kvp.Key, rank);
+                }
+                rank++;
+            }
+        }
+    }
+
+    public IEnumerable<(int CustomerId, decimal Score, int Rank)> GetCustomersByCustomerId(int customerId, int high, int low)
+    {
+        if (!customerScores.ContainsKey(customerId))
+        {
+            yield break;
+        }
+
+        var score = customerScores[customerId];
+        var rank = 1;
+        foreach (var kvp in leaderboard)
+        {
+            foreach (var id in kvp.Value)
+            {
+                if (id == customerId)
+                {
+                    yield return (customerId, score, rank);
+                    for (int i = 1; i <= high && rank - i >= 1; i++)
+                    {
+                        yield return GetCustomerByRank(rank - i);
+                    }
+                    for (int i = 1; i <= low && rank + i <= leaderboard.Count; i++)
+                    {
+                        yield return GetCustomerByRank(rank + i);
+                    }
+                    break;
+                }
+                rank++;
+            }
+        }
+    }
+
+    private (int CustomerId, decimal Score, int Rank) GetCustomerByRank(int rank)
+    {
+        var rankCounter = 1;
+        foreach (var kvp in leaderboard)
+        {
+            foreach (var customerId in kvp.Value)
+            {
+                if (rankCounter == rank)
+                {
+                    return (customerId, kvp.Key, rank);
+                }
+                rankCounter++;
+            }
+        }
+        throw new Exception("Rank out of bounds");
+    }
+}
+public class ReverseComparer : IComparer<decimal>
+{
+    public int Compare(decimal x, decimal y)
+    {
+        return y.CompareTo(x);
+    }
+}
